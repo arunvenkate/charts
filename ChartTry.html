@@ -1,0 +1,226 @@
+<head>
+<script src="jquery-1.9.1.min.js"></script>
+	<script src="highstock.js"></script>
+	<script src="http://code.highcharts.com/stock/modules/exporting.js"></script>
+	<script src="technical-indicators.js"></script>
+	<script>
+
+	$( document ).ready(function() {
+	  // Handler for .ready() called.
+		$.getJSON('http://www.highcharts.com/samples/data/jsonp.php?filename=aapl-ohlc.json&callback=?', function(data) {
+		    $(function() {
+		        $('#container').highcharts('StockChart', {
+
+		            title : {
+		                text : 'MACD of AAPL stock price'
+		            },
+
+		            subtitle: {
+		                text: 'From may 15, 2006 to May 10, 2013'
+		            },
+
+		            yAxis: [{
+		                title: {
+		                    text: 'Price'
+		                },
+		                height: 300,
+		                plotLines: [{
+		                    value: 0,
+		                    width: 1,
+		                    color: '#808080'
+		                }]
+		            }, {
+		                title: {
+		                    text: 'MACD'
+		                },
+		                top: 400,
+		                height: 100,
+		                offset: 0,
+		                lineWidth: 2
+		            }],
+
+		            tooltip: {
+		                crosshairs: true,
+		                shared: true
+		            },
+
+		            rangeSelector : {
+		                selected : 1
+		            },
+
+		            legend: {
+		                enabled: false,
+		                layout: 'vertical',
+		                align: 'right',
+		                verticalAlign: 'middle',
+		                borderWidth: 0
+		            },
+
+		            plotOptions: {
+		                series: {
+		                    marker: {
+		                        enabled: false,
+		                    }
+		                }
+		            },
+
+		            series : [{
+		                name: 'AAPL Stock Price',
+		                type : 'candlestick',
+		                id: 'primary',
+		                data : data
+		            }, {
+		                name : 'MACD',
+		                linkedTo: 'primary',
+		                yAxis: 1,
+		                showInLegend: true,
+		                type: 'trendline',
+		                algorithm: 'MACD'
+
+		            }, {
+		                name : 'Signal line',
+		                linkedTo: 'primary',
+		                yAxis: 1,
+		                showInLegend: true,
+		                type: 'trendline',
+		                algorithm: 'signalLine'
+
+		            }, {
+		                name: 'Histogram',
+		                linkedTo: 'primary',
+		                yAxis: 1,
+		                showInLegend: true,
+		                type: 'histogram'
+
+		            }, {
+						name: '15-day SMA',
+						linkedTo: 'primary',
+						showInLegend: true,
+						type: 'trendline',
+						algorithm: 'SMA',
+						periods: 15
+					}, {
+						name: '40-day SMA',
+						linkedTo: 'primary',
+						showInLegend: true,
+						type: 'trendline',
+						algorithm: 'SMA',
+						periods: 40
+					}]
+		        });
+		    });
+		});
+	});
+	var context = null;
+	$( document ).ready(function() {
+		context = document.getElementById('canvasdraw').getContext("2d");
+
+		$('#canvasdraw').mousedown(function(e){
+		  var mouseX = e.pageX - this.offsetLeft;
+		  var mouseY = e.pageY - this.offsetTop;
+
+		  paint = true;
+		  if(type == "freeflow"){
+			  addClick(e.pageX - this.offsetLeft, e.pageY - this.offsetTop);
+		  }else if(type == "line"){
+			  addLine(e.pageX - this.offsetLeft, e.pageY - this.offsetTop);
+		  }
+		  redraw();
+		});
+
+		$('#canvasdraw').mousemove(function(e){
+		  if(paint){
+		    if(type == "freeflow"){
+				addClick(e.pageX - this.offsetLeft, e.pageY - this.offsetTop, true);
+			}else if(type == "line"){
+				addLine(e.pageX - this.offsetLeft, e.pageY - this.offsetTop, true);
+			}
+		    redraw();
+		  }
+		});
+
+		$('#canvasdraw').mouseup(function(e){
+		  paint = false;
+		});
+
+		$('#canvasdraw').mouseleave(function(e){
+		  paint = false;
+		});
+
+		var clickX = new Array();
+		var clickY = new Array();
+		var clickDrag = new Array();
+		var startLine = new Array();
+		var endLine = new Array();
+		var paint;
+		var type="freeflow";
+
+		$('#linebut').click(function(e){
+		  type="line";
+		});
+		$('#freebutt').click(function(e){
+		  type="freeflow";
+		});
+
+		function addClick(x, y, dragging)
+		{
+		  clickX.push(x);
+		  clickY.push(y);
+		  clickDrag.push(dragging);
+		}
+		function addLine(x, y, dragging){
+			var obj = {'X':x,"Y":y};
+			if(dragging){
+				startLine = new Array();
+				startLine.push(obj);
+			}else{
+				endLine = new Array();
+				endLine.push(obj);
+			}
+		}
+
+
+		function redraw(){
+		  context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
+
+		  context.strokeStyle = "#df4b26";
+		  context.lineJoin = "round";
+		  context.lineWidth = 2;
+
+		  for(var i=0; i < clickX.length; i++) {
+		    context.beginPath();
+		    if(clickDrag[i] && i){
+		      context.moveTo(clickX[i-1], clickY[i-1]);
+		     }else{
+		       context.moveTo(clickX[i]-1, clickY[i]);
+		     }
+		     context.lineTo(clickX[i], clickY[i]);
+		     context.closePath();
+		     context.stroke();
+		  }
+		  for(var i=0; i < startLine.length; i++) {
+			context.beginPath();
+			 if(endLine[i]){
+			  context.moveTo(startLine[i].X, startLine[i].Y);
+			 }
+			 context.lineTo(endLine[i].X, endLine[i].Y);
+			 context.closePath();
+			 context.stroke();
+		  }
+		}
+	});
+	</script>
+</head>
+<body>
+	<div style="min-width: 500px; height: 600px; margin: 0 auto;left:0px;top:0px;position:absolute;">
+		<canvas id="canvasdraw" width="500" height="350" style="z-index:9999;position:absolute;left:0px;top:50px;cursor:crosshair" ></canvas>
+
+		<div id="container" style="width: 500px; height: 600px; margin: 0 auto;left:0px;top:0px;position:absolute;"></div>
+		<div style="min-width: 500x; height: 50px; margin: 0 auto;left:0px;top:0px;position:absolute;">
+						<button id="linebut">line</button>
+						<button id="freebutt">FreeFlow</button>
+				</div>
+
+
+	</div>
+<body>
