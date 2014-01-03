@@ -140,12 +140,19 @@
 		});
 
 		$('#canvasdraw').mouseup(function(e){
-		  paint = false;
+		  	paint = false;
 		});
 
 		$('#canvasdraw').mouseleave(function(e){
-		  paint = false;
+		  	paint = false;
 		});
+
+		document.getElementById('canvasdraw').addEventListener("click", mouseClickEvent, false);
+
+		function mouseClickEvent(e) {
+			alert("click event");
+		};
+
 
 		var clickX = new Array();
 		var clickY = new Array();
